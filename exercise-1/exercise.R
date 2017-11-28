@@ -1,92 +1,57 @@
-# Exercise-1
-# Implement code from this book chapter: http://r4ds.had.co.nz/many-models.html
+# Introductory example using the housing data used here: 
+# http://www.r2d3.us/visual-intro-to-machine-learning-part-1/
+library(rpart)
+library(rpart.plot)
 
-# Packages
-# install.packages('modelr')
-# install.packages('tidyverse')
-# install.packages('gapminder')
-library(gapminder)
-library(modelr)
-library(tidyverse)
+# Read in data
+setwd('~/Documents/info-201/m15-special-topics/exercise-2')
+homes <- read.csv('data/housing-data.csv')
 
-# Initial view of the data with ggplot
-gapminder %>% 
-  ggplot(aes(year, lifeExp, group = country)) +
-  geom_line(alpha = 1/3)
-
-# Look only at new zealand
-nz <- filter(gapminder, country == "New Zealand")
-nz %>% 
-  ggplot(aes(year, lifeExp)) + 
-  geom_line() + 
-  ggtitle("Full data = ")
-
-nz_mod <- lm(lifeExp ~ year, data = nz)
-nz %>% 
-  add_predictions(nz_mod) %>%
-  ggplot(aes(year, pred)) + 
-  geom_line() + 
-  ggtitle("Linear trend + ")
-
-nz %>% 
-  add_residuals(nz_mod) %>% 
-  ggplot(aes(year, resid)) + 
-  geom_hline(yintercept = 0, colour = "white", size = 3) + 
-  geom_line() + 
-  ggtitle("Remaining pattern")
-
-# Better yet, write your own function to accept a country as a parameter,
-# and produce the same graphics
-
-# Nest the data by country/continent
-by_country <- gapminder %>% 
-  group_by(country, continent) %>% 
-  nest()
-
-# Define a statistical model, and store it in a function
-country_model <- function(df) {
-  lm(lifeExp ~ year, data = df)
+# Function to compare values
+AssessFit <- function(model, data = homes, outcome = 'in_sf') {
+  predicted <- predict(model, data, type='class')
+  accuracy <- length(which(data[,outcome] == predicted)) / length(predicted) * 100
+  return(accuracy)
 }
 
-# Use the `map` functionality to run the same model for each country separately
-by_country <- by_country %>% 
-  mutate(model = map(data, country_model))
+# Assess fit for different models
 
-# Add additional columns to store your residuals (distance between data and prediction)
-by_country <- by_country %>% 
-  mutate(
-    resids = map2(data, model, add_residuals)
-  )
+# Use rpart to fit a model: predict `in_sf` using all other variables
+basic.fit <- rpart(in_sf ~ ., data = homes, method="class")
 
-# Unnest your residual
-resids <- unnest(by_country, resids)
+# How well did we do?
+AssessFit(basic.fit)
 
-# Plot the residuals
-resids %>% 
-  ggplot(aes(year, resid)) +
-  geom_line(aes(group = country), alpha = 1 / 3) + 
-  geom_smooth(se = FALSE)
+# Create empty vectors to store results
+basic.fits <- vector()
+perfect.fits <- vector()
 
-# Plot residuals by continent
-resids %>% 
-  ggplot(aes(year, resid, group = country)) +
-  geom_line(alpha = 1 / 3) + 
-  facet_wrap(~continent)
+# Sample size for training dataset
+sample.size <- floor(.75 * nrow(homes))
+for(i in 1:100) {
+  # Create test and training data
+  # Hint: http://stackoverflow.com/questions/17200114/how-to-split-data-into-training-testing-sets-using-sample-function-in-r-program
+  # 1. Create training and testing datasets by sampling 75% of your data from your `homes` dataframe.
+  train.indicies <- sample(seq_len(nrow(homes)), size = sample.size)
+  training.data <- homes[train.indicies,]
+  test.data <- homes[-train.indicies,]
+  
+  # 2. Pass your **training data** to the `rpart` function to run a simple classification operation
+  basic.fit <- rpart(in_sf ~ ., data = training.data, method="class")
+  
+  # 3. Pass your results to the `AssessFit` function to assess the fit
+  assessment <- AssessFit(basic.fit, data=test.data)
+  
+  # 4. Store your assessment in the `basic.fits` vector
+  basic.fits <- c(basic.fits, assessment)
+}
 
-# Use `glance` to look at model quality
-glance <- by_country %>% 
-  mutate(glance = map(model, broom::glance)) %>% 
-  unnest(glance, .drop = TRUE)
+# 5. Make a histogram of your `basic.fits` vector
+hist(basic.fits)
 
-# Compare model quality to continent
-glance %>% 
-  ggplot(aes(continent, r.squared)) + 
-  geom_jitter(width = 0.5)
+# 6. Take the mean of your `basic.fits` vector
+mean(basic.fits)
 
-# View country that have an r.squared value of less than .25
-bad_fit <- filter(glance, r.squared < 0.25)
 
-gapminder %>% 
-  semi_join(bad_fit, by = "country") %>% 
-  ggplot(aes(year, lifeExp, colour = country)) +
-  geom_line()
+# 7. Pass your most recent model to the `rpart.plot` function to graph it
+rpart.plot(basic.fit)

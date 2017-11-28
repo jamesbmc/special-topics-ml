@@ -1,4 +1,22 @@
-# Exercise-1
-In this exercise, you'll walk through [this tutorial](http://r4ds.had.co.nz/many-models.html) and implement the code described. In particular, you'll get exposure to working with Linear Models, and intentionally nesting dataframes (i.e., dataframes where the columns contain dataframes).
+# Exercise-2
+In this exercise, you'll practice running a simple classification algorithm, and splitting your data into test and train splits. As usual, you should fork/clone the repository, then follow the instructions below (also indicated in the `exercise.R` file).
 
-In addition to implementing the code, you should make your own graphics (using a package of your choice), and consider some of the ways in which you can answer relevant / data-driven questions.
+See `complete` branch for answers
+
+Inside your loop, do the following:
+
+    1. Create training and testing datasets by sampling 75% of your data from your `homes` dataframe.
+
+    2. Pass your **training data** to the `rpart` function to run a simple classification operation
+
+    3. Pass your results to the `AssessFit` function to assess the fit
+
+    4. Store your assessment in the `basic.fits` vector
+
+Below your loop, do the following:
+
+    5. Make a histogram of your `basic.fits` vector
+
+    6. Take the mean of your `basic.fits` vector
+
+    7. Pass your most recent model to the `rpart.plot` function to graph it
