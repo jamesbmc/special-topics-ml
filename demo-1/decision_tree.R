@@ -16,9 +16,8 @@ AssessFit <- function(model, data = homes, outcome = 'in_sf') {
 SimpleTree <- function(predictors) {
   # Write out forumula
   predictors <- paste( predictors, collapse = "+")
-  print(predictors)
   formula <- as.formula(paste0('in_sf ~ ', predictors))
-  
+  print(formula)
   # Set test / training data
   sample_size <- floor(.25 * nrow(homes))
   train_indicies <- sample(seq_len(nrow(homes)), size = sample_size)

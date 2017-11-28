@@ -1,1 +1,1 @@
-# Module 15: Special Topics
+# Special Topics: Machine Learning
